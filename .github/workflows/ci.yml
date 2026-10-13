@@ -1,0 +1,40 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  protocol-and-ui:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Install test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-gi python3-cryptography gjs libglib2.0-bin \
+            gir1.2-gtk-4.0 gir1.2-gtk-3.0 gir1.2-adw-1 gir1.2-secret-1 \
+            gir1.2-ayatanaappindicator3-0.1 gnome-shell-common xvfb dbus-x11
+      - name: Verify pinned MQTT dependency
+        run: |
+          /usr/bin/python3 scripts/vendor-paho.py
+          /usr/bin/python3 scripts/vendor-paho.py
+      - name: Protocol and installer regression tests
+        run: /usr/bin/python3 -m unittest discover -s tests
+      - name: JavaScript state and lifecycle tests
+        run: gjs -m extension/tests/state.test.js
+      - name: Validate extension settings schema
+        run: glib-compile-schemas --strict --dry-run extension/schemas
+      - name: GTK control tests with synthetic devices
+        env:
+          GDK_BACKEND: x11
+          NO_AT_BRIDGE: "1"
+        run: |
+          dbus-run-session -- xvfb-run -a /usr/bin/python3 tests/gtk-smoke.py
+          dbus-run-session -- xvfb-run -a /usr/bin/python3 tests/tray-smoke.py

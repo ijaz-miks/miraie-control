@@ -1,0 +1,9 @@
+{
+  "uuid": "miraie-control@ijaz.local",
+  "name": "MirAIe AC Controls",
+  "description": "Panasonic MirAIe air conditioner controls in the GNOME top panel",
+  "url": "https://github.com/ijaz-miks/miraie-control",
+  "shell-version": ["50"],
+  "version": 1,
+  "settings-schema": "org.gnome.shell.extensions.miraie-control"
+}

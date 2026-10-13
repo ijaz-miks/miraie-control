@@ -1,0 +1,16 @@
+MirAIe Control is an independent community project. Panasonic, MirAIe and nanoe
+are names used to describe device compatibility. This project is not affiliated
+with or endorsed by Panasonic.
+
+Project source is licensed under the MIT License in LICENSE. The implementation
+was independently written from protocol observations. Proprietary application
+packages, decompiled source, device captures and account data are not included.
+
+The setup script downloads Eclipse Paho MQTT Python 2.1.0 from PyPI. That package
+is dual licensed under the Eclipse Public License 2.0 and Eclipse Distribution
+License 1.0. Its original license notice is retained in the downloaded wheel's
+paho_mqtt-2.1.0.dist-info/licenses directory and copied with local installations.
+Paho source: https://github.com/eclipse-paho/paho.mqtt.python
+
+GTK, libadwaita, PyGObject, libsecret, cryptography and Ayatana AppIndicator are
+provided by the operating system and retain their respective upstream licenses.

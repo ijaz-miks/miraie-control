@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.miraie-control" path="/org/gnome/shell/extensions/miraie-control/">
+    <key name="selected-device" type="s">
+      <default>''</default>
+      <summary>Selected air conditioner</summary>
+      <description>The device identifier selected in the control menu.</description>
+    </key>
+    <key name="show-temperature" type="b">
+      <default>true</default>
+      <summary>Show temperature in the top panel</summary>
+      <description>Show the confirmed target temperature when the selected AC is on and online.</description>
+    </key>
+  </schema>
+</schemalist>
