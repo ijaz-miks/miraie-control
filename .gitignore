@@ -4,6 +4,11 @@
 /vendor/
 /dist/
 /build/
+.build/
+.swiftpm/
+*.app/
+*.dmg
+.DS_Store
 __pycache__/
 *.py[cod]
 gschemas.compiled

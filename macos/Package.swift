@@ -4,9 +4,10 @@ import PackageDescription
 let package = Package(
     name: "MirAIeControl",
     platforms: [.macOS(.v14)],
-    products: [.library(name: "MirAIeKit", targets: ["MirAIeKit"])],
+    products: [.executable(name: "MirAIeControl", targets: ["MirAIeControl"])],
     targets: [
         .target(name: "MirAIeKit"),
+        .executableTarget(name: "MirAIeControl", dependencies: ["MirAIeKit"]),
         .testTarget(name: "MirAIeKitTests", dependencies: ["MirAIeKit"])
     ]
 )
