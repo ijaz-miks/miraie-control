@@ -1,7 +1,7 @@
 # MirAIe Control
 
-Control Panasonic MirAIe air conditioners from the Ubuntu desktop, with a GNOME
-top-bar menu and a GTK/libadwaita control window. This is an independent community
+Control Panasonic MirAIe air conditioners from Ubuntu or macOS, with native
+menu-bar controls and account settings. This is an independent community
 project, licensed under MIT and not affiliated with Panasonic.
 
 ## Features
@@ -12,18 +12,25 @@ project, licensed under MIT and not affiliated with Panasonic.
 - Keep pending changes separate from confirmed device settings.
 - Show disconnected devices as offline, with cached temperatures labelled as
   last known. Retained MQTT messages cannot make an offline AC appear online.
-- Store account credentials in GNOME Keyring.
-- Use the native GNOME panel, standalone window or AppIndicator tray fallback.
+- Store account credentials in GNOME Keyring on Ubuntu or Keychain on macOS.
+- Use the GNOME panel, GTK window or tray on Ubuntu, or a SwiftUI menu-bar app
+  with native Liquid Glass controls on macOS 26 and newer.
 
 Advanced controls depend on model metadata and firmware. This is an early
 project with limited real-device validation.
 
 ## Compatibility and connectivity
 
-The native extension has been tested on **Ubuntu 26.04 with GNOME Shell 50**.
+The GNOME extension has been tested on **Ubuntu 26.04 with GNOME Shell 50**.
 Its metadata currently supports GNOME 50 only. Other distributions and GNOME
 versions have not been validated. The tray requires an AppIndicator host, such
 as Ubuntu's AppIndicator extension.
+
+The native Mac app requires **macOS 14 or newer**, and uses the system Liquid
+Glass popover and button styles on macOS 26 and newer. Earlier systems use native
+bordered controls. The Mac build is self-contained and does not need Python,
+GNOME, MQTT libraries or a Linux service to run. It builds for the architecture
+of the Mac used to compile it.
 
 Your AC must already be paired with the official MirAIe app and connected to
 Wi-Fi. Cloud control requires Internet access on both the AC and the desktop.
@@ -31,13 +38,46 @@ An Android phone, USB connection, REA or a decompiler is not needed to install
 or use this project. Initial account setup supports email or a mobile number
 with country code and password, using the MirAIe service at `miraie.in`.
 
-**Local UDP control is experimental.** It is available only when the model
+**Local UDP control on Ubuntu is experimental.** It is available only when the model
 advertises `udpControl`, its firmware meets the declared minimum, and the cloud
 returns valid device keys. Discovery uses the desktop's active Wi-Fi subnet and
 UDP port 5001, so client isolation or an occupied port can prevent it from
 working. Initial authentication and discovery still need Internet access.
 Encryption and packet handling have mock tests; offline control has not been
 validated on physical hardware. Do not assume every MirAIe AC supports it.
+
+The macOS client currently uses cloud HTTPS control. It refreshes device status
+when its popover opens, every minute while running, and after each command until
+the requested setting is confirmed. It does not currently implement local UDP
+control or MQTT subscriptions.
+
+## Install on macOS
+
+Install Xcode 26 or newer, or its command-line tools with the macOS 26 SDK or
+newer. Clone this repository and build as your normal desktop user:
+
+```sh
+git clone https://github.com/ijaz-miks/miraie-control.git
+cd miraie-control
+/usr/bin/python3 scripts/build-macos.py --output-dir "$HOME/Applications"
+open "$HOME/Applications/MirAIe Control.app"
+```
+
+The bundler creates a new app and refuses to replace an existing one. The local
+build is ad-hoc signed; it is not a notarized download or App Store release.
+Preserve an existing app or move it to Trash before installing a fresh bundle.
+Without `--output-dir`, builds go into a new directory under `macos/.build/bundles`.
+
+Sign in in **MirAIe Control Settings** on your Mac. The snowflake in the menu bar
+opens the controls; its label shows the confirmed target when the selected AC
+is on and online. Account Settings also offers **Open at login**, using macOS
+Login Items. The app stays out of the Dock and application switcher.
+
+Device selection, power, temperature, mode and fan are available in the popover.
+**More controls** contains supported swing, capacity, display and nanoe settings.
+Disconnected devices show **Offline** and last-known temperatures, with controls
+disabled. Changing a setting keeps the old confirmed value visible until the AC
+acknowledges the change through fresh status.
 
 ## Install on Ubuntu
 
@@ -88,7 +128,7 @@ refresh before deciding whether to retry.
 
 ## How it works
 
-The desktop interfaces communicate with one user-session D-Bus backend. The
+The Ubuntu interfaces communicate with one user-session D-Bus backend. That
 backend discovers homes, devices and capabilities over HTTPS, subscribes to
 status updates over TLS MQTT, and sends commands through MQTT or HTTPS. It
 verifies fresh device status before displaying a requested setting as confirmed.
@@ -103,6 +143,8 @@ An uncertain write is not automatically resent through a second transport.
 | `backend/settings.py` | GTK 4/libadwaita account and control window |
 | `backend/tray.py` | GTK 3/Ayatana tray fallback |
 | `extension/` | Native GNOME Shell menu |
+| `macos/Sources/MirAIeKit/` | Native HTTPS client, capability parsing, confirmation and Keychain storage |
+| `macos/Sources/MirAIeControl/` | SwiftUI controls hosted in an AppKit menu-bar popover |
 
 The protocol was investigated using [REA](https://github.com/morluto/rea) and
 JADX. The controller is independently implemented. Proprietary APKs, decompiled
@@ -137,6 +179,31 @@ The tests use synthetic device responses, fake sockets and mock D-Bus controls.
 They do not read account secrets or send commands to real air conditioners.
 Installer and Shell test output is retained under the ignored `test-output/`
 directory. CI runs the protocol, installer, JavaScript and GTK smoke checks.
+
+With full Xcode selected on a Mac, run the native protocol regression tests:
+
+```sh
+swift test --package-path macos
+```
+
+Full Xcode supplies XCTest; command-line tools alone can build and run the app
+but may not include that test framework. CI runs the native tests and verifies
+the app bundle on a macOS runner with Xcode.
+
+The app also has an explicit demo mode with two synthetic devices, independent
+of your account, Keychain and saved preferences. To test the native popover in a
+Mac desktop session, use a fresh output directory:
+
+```sh
+open -n "$HOME/Applications/MirAIe Control.app" --args --demo --show-panel
+open --env "MIRAIE_UI_TEST_OUTPUT=$PWD/test-output/mac-ui-$(date +%s)" \
+  -n -W "$HOME/Applications/MirAIe Control.app" --args --ui-smoke
+```
+
+The UI smoke mode captures only its own synthetic popover, exercises a mock
+temperature change, verifies offline guards, closes and reopens the popover,
+and writes its result before quitting. Its screenshots and results stay local
+and are ignored by Git. Quit the demo before opening the app normally.
 
 Real-device validation has confirmed cloud discovery, online/offline handling,
 and a target-temperature change followed by restoration. That does not establish

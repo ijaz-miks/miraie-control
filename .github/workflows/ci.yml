@@ -8,6 +8,18 @@ permissions:
   contents: read
 
 jobs:
+  macos:
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Native protocol and controller regression tests
+        run: swift test --package-path macos
+      - name: Build and verify a self-contained app bundle
+        run: /usr/bin/python3 scripts/build-macos.py
+
   protocol-and-ui:
     runs-on: ubuntu-26.04
     timeout-minutes: 10
