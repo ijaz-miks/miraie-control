@@ -122,6 +122,8 @@ async function execute() {
         const extension = Main.extensionManager.lookup(uuid).stateObj;
         await until(() => extension.backend.state.connection === 'signed-out', 'Signed-out state not received');
         let ui = extension.indicator;
+        assert(ui.constructor.$gtype.name === 'MiraieControlIndicator',
+            'Indicator GType must stay unique; the stylesheet selects it');
         ui.menu.open(); await sleep(200);
         assert(ui.status.label.text === 'Sign in to your MirAIe account' && !ui.power.sensitive &&
             !ui.power.reactive && !ui.plus.reactive && !ui.panelTemperature.visible,

@@ -1,3 +1,17 @@
 /* Native Shell theme supplies colours, switches, focus and menus. */
 .miraie-control-menu { min-width: 24em; }
 .miraie-temperature-value { min-width: 5em; text-align: center; }
+
+/* Match the other 36px tray buttons and retain the native hover styling. */
+#panel MiraieControlIndicator.panel-button {
+    -natural-hpadding: 10px;
+    -minimum-hpadding: 10px;
+}
+#panel MiraieControlIndicator.panel-button .panel-status-menu-box {
+    spacing: 0;
+}
+#panel MiraieControlIndicator.panel-button .system-status-icon {
+    icon-size: 16px;
+    padding: 0;
+    margin: 0;
+}

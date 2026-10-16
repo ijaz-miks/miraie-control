@@ -14,10 +14,10 @@ const FIELDS = {power: 'power', temperature: 'temperature', mode: 'mode', fan: '
 const STATUS = {'signed-out': 'Sign in to your MirAIe account', connecting: 'Connecting',
     ready: 'Online', error: 'Connection error', offline: 'Network unavailable'};
 
-const StaySwitch = GObject.registerClass(class StaySwitch extends PopupMenu.PopupSwitchMenuItem {
+const StaySwitch = GObject.registerClass({GTypeName: 'MiraieControlStaySwitch'}, class StaySwitch extends PopupMenu.PopupSwitchMenuItem {
     activate(_event) { if (this._switch.mapped) this.toggle(); }
 });
-const StayItem = GObject.registerClass({Signals: {triggered: {}}}, class StayItem extends PopupMenu.PopupMenuItem {
+const StayItem = GObject.registerClass({GTypeName: 'MiraieControlStayItem', Signals: {triggered: {}}}, class StayItem extends PopupMenu.PopupMenuItem {
     activate(_event) { this.emit('triggered'); }
 });
 
@@ -60,7 +60,8 @@ class ChoiceMenu {
     }
 }
 
-export const Indicator = GObject.registerClass(class Indicator extends PanelMenu.Button {
+// Explicit names: GJS derives them from ui/indicator.js + class, which other extensions also use.
+export const Indicator = GObject.registerClass({GTypeName: 'MiraieControlIndicator'}, class Indicator extends PanelMenu.Button {
     _init(backend, settings) {
         super._init(0.5, 'MirAIe AC Controls');
         this.backend = backend;
