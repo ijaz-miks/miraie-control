@@ -454,12 +454,12 @@ class Controller:
         failure = None
         for identity in list(self.internal):
             try:
-                status = self.api.status(identity)
+                try:
+                    status = self.api.status(identity)
+                except AuthenticationError:
+                    self.api.login(*self.api.credentials)
+                    status = self.api.status(identity)
                 self._update(identity, status, source='rest')
-                successes += 1
-            except AuthenticationError:
-                self.api.login(*self.api.credentials)
-                self._update(identity, self.api.status(identity), source='rest')
                 successes += 1
             except MirAIeError as error:
                 failure = error

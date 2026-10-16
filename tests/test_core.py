@@ -310,6 +310,23 @@ class ReachabilityTests(unittest.TestCase):
         controller._connection_status('ac/test?x=1', {'onlineStatus': 'true'}, retained=False)
         self.assertTrue(controller.snapshot()['devices'][0]['online'])
 
+    def test_failed_retry_after_reauthentication_only_marks_that_ac_offline(self):
+        controller = controller_fixture()
+        controller.state['devices'].append(device(id='ac-two', name='Second AC', online=False))
+        controller.internal['ac-two'] = {'home': 'test-home', 'topic': 'test/two', 'detail': {}, 'raw': {}}
+        calls = []
+        def status(identity):
+            calls.append(identity)
+            if identity == 'ac-two':
+                return {'onlineStatus': 'on', 'actmp': '26'}
+            raise core.AuthenticationError('expired') if len(calls) == 1 else core.MirAIeError('Cannot reach MirAIe.')
+        controller.api.status = status
+        controller.api.login = lambda *_args: None
+        controller._refresh()
+        online = {item['id']: item['online'] for item in controller.state['devices']}
+        self.assertEqual(online, {'ac/test?x=1': False, 'ac-two': True})
+        self.assertEqual(controller.state['connection'], 'ready')
+
     def test_local_keys_and_iv_are_never_in_public_snapshots(self):
         controller = controller_fixture()
         key = 'a' * 32
