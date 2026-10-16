@@ -1,6 +1,19 @@
 /* Native Shell theme supplies colours, switches, focus and menus. */
 .miraie-control-menu { min-width: 24em; }
-.miraie-temperature-value { min-width: 5em; text-align: center; }
+.miraie-control-header { font-weight: bold; }
+
+/* Thermostat card: large target between round steppers, room reading below. */
+.miraie-temperature-card { padding-top: 12px; padding-bottom: 12px; }
+.miraie-temperature-step {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 999px;
+}
+.miraie-temperature-step StIcon { icon-size: 16px; }
+.miraie-temperature-value { font-size: 2.4em; font-weight: 300; font-feature-settings: "tnum"; }
+.miraie-temperature-caption { font-size: 0.85em; }
+.miraie-room-temperature { font-size: 0.9em; margin-top: 10px; }
 
 /* Match the other 36px tray buttons and retain the native hover styling. */
 #panel MiraieControlIndicator.panel-button {

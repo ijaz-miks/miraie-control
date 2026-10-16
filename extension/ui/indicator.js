@@ -84,6 +84,7 @@ export const Indicator = GObject.registerClass({GTypeName: 'MiraieControlIndicat
         this.add_child(panelBox);
         this.menu.box.add_style_class_name('miraie-control-menu');
         this.header = new PopupMenu.PopupImageMenuItem('MirAIe AC Controls', 'weather-snow-symbolic', {reactive: false, can_focus: false});
+        this.header.label.add_style_class_name('miraie-control-header');
         this.menu.addMenuItem(this.header);
         this.status = new PopupMenu.PopupMenuItem('Connecting', {reactive: false, can_focus: false});
         this.menu.addMenuItem(this.status);
@@ -102,21 +103,30 @@ export const Indicator = GObject.registerClass({GTypeName: 'MiraieControlIndicat
                 this.command('power', value);
         });
         this.controls.addMenuItem(this.power);
-        this.temperatureTitle = new PopupMenu.PopupMenuItem('Target temperature', {reactive: false, can_focus: false});
-        this.controls.addMenuItem(this.temperatureTitle);
-        this.temperatureRow = new PopupMenu.PopupBaseMenuItem({activate: false, can_focus: false});
-        this.minus = new St.Button({label: '−', style_class: 'button', can_focus: true,
-            accessible_name: 'Decrease target temperature'});
-        this.temperature = new St.Label({text: 'Unavailable', style_class: 'miraie-temperature-value',
-            y_align: Clutter.ActorAlign.CENTER, x_expand: true});
-        this.plus = new St.Button({label: '+', style_class: 'button', can_focus: true,
-            accessible_name: 'Increase target temperature'});
-        for (const actor of [this.minus, this.temperature, this.plus]) this.temperatureRow.add_child(actor);
+        // Thermostat card: − target + with the measured room temperature underneath.
+        this.temperatureCard = new PopupMenu.PopupBaseMenuItem({activate: false, can_focus: false,
+            style_class: 'miraie-temperature-card'});
+        const card = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, x_expand: true});
+        const dial = new St.BoxLayout({x_expand: true});
+        const step = (icon, name) => new St.Button({style_class: 'button miraie-temperature-step', can_focus: true,
+            accessible_name: name, y_align: Clutter.ActorAlign.CENTER, child: new St.Icon({icon_name: icon})});
+        this.minus = step('list-remove-symbolic', 'Decrease target temperature');
+        this.plus = step('list-add-symbolic', 'Increase target temperature');
+        const reading = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, x_expand: true,
+            y_align: Clutter.ActorAlign.CENTER});
+        this.temperature = new St.Label({text: '--', style_class: 'miraie-temperature-value', x_align: Clutter.ActorAlign.CENTER});
+        this.temperatureCaption = new St.Label({text: 'Target temperature', style_class: 'miraie-temperature-caption',
+            x_align: Clutter.ActorAlign.CENTER});
+        for (const actor of [this.temperature, this.temperatureCaption]) reading.add_child(actor);
+        for (const actor of [this.minus, reading, this.plus]) dial.add_child(actor);
+        this.roomTemperature = new St.Label({text: 'Room temperature unavailable', style_class: 'miraie-room-temperature',
+            x_align: Clutter.ActorAlign.CENTER});
+        for (const actor of [dial, this.roomTemperature]) card.add_child(actor);
+        this.temperatureCaption.opacity = this.roomTemperature.opacity = 170;
+        this.temperatureCard.add_child(card);
         connect(this.minus, 'clicked', () => this.stepTemperature(-1));
         connect(this.plus, 'clicked', () => this.stepTemperature(1));
-        this.controls.addMenuItem(this.temperatureRow);
-        this.roomTemperature = new PopupMenu.PopupMenuItem('Room temperature: Unavailable', {reactive: false, can_focus: false});
-        this.controls.addMenuItem(this.roomTemperature);
+        this.controls.addMenuItem(this.temperatureCard);
         for (const [field, title] of [['mode', 'Mode'], ['fan', 'Fan speed'],
             ['verticalSwing', 'Vertical swing'], ['horizontalSwing', 'Horizontal swing']]) {
             const choice = new ChoiceMenu(title, value => this.command(field, value));
@@ -238,7 +248,14 @@ export const Indicator = GObject.registerClass({GTypeName: 'MiraieControlIndicat
             this.power.setStatus(!available ? (device ? 'Offline' : 'Unavailable') : values.power === undefined ? 'Unavailable' : null);
             this.power.sensitive = sensitive && values.power !== undefined;
             this.power.syncSensitive();
-            this.temperature.text = values.temperature === undefined ? 'Unavailable' : `${values.temperature} °C${available ? '' : ' (last known)'}`;
+            // Preview the requested target while the AC confirms it.
+            const setting = pending?.field === 'temperature' && pending.deviceId === device?.id;
+            const target = setting ? pending.value : values.temperature;
+            this.temperature.text = target === undefined ? '--' : `${target}°`;
+            this.temperatureCaption.text = setting ? 'Setting target…' : !available ? (device ? 'Last known target' : 'Target temperature') :
+                values.power === false ? 'Target · AC is off' : 'Target temperature';
+            // Opacity rather than colour keeps the native light and dark Shell styles intact.
+            this.temperature.opacity = setting || !available || values.power === false ? 128 : 255;
             const bounds = capabilities.temperature;
             for (const [button, enabled] of [[this.minus, values.temperature > bounds?.min], [this.plus, values.temperature < bounds?.max]]) {
                 const active = Boolean(sensitive && bounds && values.temperature !== undefined && enabled);
@@ -246,7 +263,8 @@ export const Indicator = GObject.registerClass({GTypeName: 'MiraieControlIndicat
                 button.can_focus = active;
                 button.opacity = active ? 255 : 128;
             }
-            this.roomTemperature.label.text = values.roomTemperature === undefined ? 'Room temperature: Unavailable' : `${available ? 'Room temperature' : 'Last known room temperature'}: ${values.roomTemperature} °C`;
+            this.roomTemperature.text = values.roomTemperature === undefined ? 'Room temperature unavailable' :
+                `${available ? 'Room' : 'Last known room'} ${values.roomTemperature} °C`;
             for (const [field, choice] of this.choices) {
                 const key = {mode: 'modes', fan: 'fanModes', verticalSwing: 'verticalSwing', horizontalSwing: 'horizontalSwing', capacity: 'capacity'}[field];
                 const options = capabilities[key] ?? [];

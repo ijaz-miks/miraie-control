@@ -133,8 +133,8 @@ async function execute() {
         await until(() => extension.backend.state.connection === 'ready', 'Ready state not received');
         await sleep(150);
         assert(ui.header.label.text === 'Bedroom AC' && ui.status.label.text === 'Online' &&
-            ui.temperature.text === '24 °C' && ui.panelTemperature.text === '24°' &&
-            ui.roomTemperature.label.text === 'Room temperature: 28 °C', 'Ready panel labels were incorrect');
+            ui.temperature.text === '24°' && ui.temperatureCaption.text === 'Target temperature' && ui.panelTemperature.text === '24°' &&
+            ui.roomTemperature.text === 'Room 28 °C', 'Ready panel labels were incorrect');
         assert(ui.power.reactive && ui.plus.reactive && ui.nanoe.visible && ui.display.visible &&
             ui.choices.get('capacity').item.visible, 'Expected model controls missing');
         for (const field of ['mode', 'fan', 'verticalSwing', 'horizontalSwing', 'capacity'])
@@ -154,7 +154,11 @@ async function execute() {
 
         await expectCommand(() => activate(ui.power), 'power', false);
         assert(ui.menu.isOpen, 'Power activation closed the menu');
-        await expectCommand(() => { ui.plus.emit('clicked', 1); }, 'temperature', 25);
+        await expectCommand(() => {
+            ui.plus.emit('clicked', 1);
+            assert(ui.temperature.text === '25°' && ui.temperatureCaption.text === 'Setting target…',
+                'Requested target was not previewed while confirming');
+        }, 'temperature', 25);
         const keyboard = global.stage.context.get_backend().get_default_seat()
             .create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
         ui.power.grab_key_focus();
@@ -186,7 +190,8 @@ async function execute() {
         mock.set(cachedOffline); await sleep(100);
         assert(ui.status.label.text === 'AC offline' && ui.power._statusBin.child === ui.power._statusLabel &&
             ui.power._statusLabel.text === 'Offline' &&
-            !ui.power.reactive && ui.temperature.text.includes('last known') && !ui.panelTemperature.visible,
+            !ui.power.reactive && ui.temperatureCaption.text === 'Last known target' &&
+            ui.roomTemperature.text === 'Last known room 28 °C' && !ui.panelTemperature.visible,
             'Cached power-on state was presented as live for an offline AC');
         checks.push('Offline AC hides cached power switch and labels old temperatures as last known');
         mock.set({...mock.state, connection: 'offline'}); await sleep(100);
