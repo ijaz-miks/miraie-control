@@ -198,7 +198,8 @@ class Application(Adw.Application):
             return
         if self.state.get('busy') or self.state.get('connection') != 'ready' or not self.current.get('online') or self.current['state'].get(field) == value:
             return
-        self.group.set_sensitive(False)
+        # Show the confirmed value as pending until the AC reports the change.
+        self._render({**self.state, 'busy': True})
         self._call('Command', GLib.Variant('(sss)', (self.current['id'], field, json.dumps(value))))
 
     def _render(self, state):

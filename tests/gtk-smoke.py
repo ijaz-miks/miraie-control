@@ -43,6 +43,9 @@ app.power.set_active(True)
 assert len(app.proxy.calls) == 1
 method, parameters = app.proxy.calls[0]
 assert method == 'Command' and parameters == ('test-ac', 'power', 'true')
+assert not app.power.get_active() and not app.group.get_sensitive(), 'Unconfirmed changes show the confirmed value as pending'
+assert app.status_label.get_label() == 'Updating…'
+app._render(state)
 busy = copy.deepcopy(state)
 busy['busy'] = True
 app._render(busy)
