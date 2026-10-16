@@ -37,13 +37,11 @@ final class DeviceTests: XCTestCase {
         XCTAssertFalse(device.online)
         XCTAssertEqual(device.temperature, 25)
     }
-    func testFirmwareRoomTemperatureDecoding() {
+    func testRoomTemperatureIsPlainCelsius() {
         var device = fixture()
         device.detail["firmwareVersion"] = .string("3.2.1")
-        device.apply(["rmtmp": .string("64.28")])
-        XCTAssertEqual(device.roomTemperature, 28.25)
-        device.detail["firmwareVersion"] = .string("2.1.0")
-        XCTAssertEqual(device.roomTemperature, 64.28)
+        device.apply(["rmtmp": .string("28.5")])
+        XCTAssertEqual(device.roomTemperature, 28.5)
         device.apply(["rmtmp": .string("999")])
         XCTAssertNil(device.roomTemperature)
     }

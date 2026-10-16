@@ -50,13 +50,7 @@ def boolean(value):
     return None
 
 
-def room_temperature(value, firmware=''):
-    text = str(value)
-    version = re.match(r'[^0-9]*(\d+)\.(\d+)', str(firmware))
-    if version and tuple(map(int, version.groups())) >= (3, 2) and '.' in text:
-        prefix, temperature = text.split('.', 1)
-        if prefix.isdigit() and temperature.isdigit() and 0 <= int(prefix) < 256 and 0 < int(temperature) < 80:
-            return round(int(temperature) + int(prefix) / 256, 2)
+def room_temperature(value):
     result = number(value)
     return result if result is not None and -20 <= result <= 80 else None
 
@@ -71,7 +65,7 @@ def unwrap_status(payload):
     return payload
 
 
-def normalize_status(raw, firmware=''):
+def normalize_status(raw):
     raw = unwrap_status(raw)
     result = {}
     for field, wire in FIELDS.items():
@@ -86,12 +80,12 @@ def normalize_status(raw, firmware=''):
             value = str(value).lower()
         result[field] = value
     if 'rmtmp' in raw:
-        result['roomTemperature'] = room_temperature(raw['rmtmp'], firmware)
+        result['roomTemperature'] = room_temperature(raw['rmtmp'])
     return result
 
 
 def capabilities(raw, detail):
-    state = normalize_status(raw, detail.get('firmwareVersion', ''))
+    state = normalize_status(raw)
     model = detail.get('_model', {})
     by_field = {}
     capability_types = {}
@@ -496,7 +490,7 @@ class Controller:
             else:
                 internal['raw'].update(raw)
             detail = internal['detail']
-            device['state'] = normalize_status(internal['raw'], detail.get('firmwareVersion', ''))
+            device['state'] = normalize_status(internal['raw'])
             device['capabilities'] = capabilities(internal['raw'], detail)
             device['model'] = str(detail.get('modelName') or detail.get('modelNumber') or device['model'])
             if source == 'rest':

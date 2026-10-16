@@ -198,12 +198,9 @@ class PayloadTests(unittest.TestCase):
 
 
 class NormalizationTests(unittest.TestCase):
-    def test_firmware_specific_room_temperature_decoding(self):
-        self.assertEqual(core.room_temperature('128.25', '3.2.1'), 25.5)
-        self.assertEqual(core.room_temperature('64.27', 'V3.3'), 27.25)
-        self.assertEqual(core.room_temperature('25.5', '3.1'), 25.5)
-        self.assertEqual(core.room_temperature('25.5', ''), 25.5)
-        self.assertIsNone(core.room_temperature('128.25', '3.1'))
+    def test_room_temperature_is_plain_celsius(self):
+        self.assertEqual(core.room_temperature('28.5'), 28.5)
+        self.assertEqual(core.normalize_status({'rmtmp': '28.5'})['roomTemperature'], 28.5)
         for raw in ('unknown', None, 'nan', 'inf', '-100'):
             with self.subTest(raw=raw):
                 self.assertIsNone(core.room_temperature(raw))

@@ -80,15 +80,7 @@ public struct Device: Identifiable, Equatable, Sendable {
     public var power: Bool? { online ? raw["ps"]?.flag : nil }
     public var temperature: Double? { raw["actmp"]?.double }
     public var roomTemperature: Double? {
-        guard let value = raw["rmtmp"] else { return nil }
-        let version = (detail["firmwareVersion"]?.text ?? "").split(whereSeparator: { !$0.isNumber }).compactMap { Int($0) }
-        let components = (value.text ?? "").split(separator: ".", omittingEmptySubsequences: false)
-        if version.count >= 2, version[0] > 3 || (version[0] == 3 && version[1] >= 2),
-           components.count == 2, let prefix = Int(components[0]), let degrees = Int(components[1]),
-           (0..<256).contains(prefix), (1..<80).contains(degrees) {
-            return ((Double(degrees) + Double(prefix) / 256) * 100).rounded() / 100
-        }
-        return value.double.flatMap { (-20...80).contains($0) ? $0 : nil }
+        raw["rmtmp"]?.double.flatMap { (-20...80).contains($0) ? $0 : nil }
     }
 
     public func value(_ field: ControlField) -> JSONValue? {
