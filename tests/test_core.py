@@ -391,6 +391,21 @@ class TransactionTests(unittest.TestCase):
         self.assertEqual(controller.state['devices'][0]['state']['temperature'], 25)
         self.assertEqual(controller.api.status_calls, [], 'Check MQTT state after waking before fetching older REST state')
 
+    def test_mqtt_confirmation_during_rest_request_survives_its_older_reply(self):
+        clock = VirtualClock()
+        controller = controller_fixture(lock=VirtualCondition(clock))
+        controller.clients['test-home'] = FakeMQTT()
+        fetch = controller.api.status
+        def in_flight(identity):
+            reply = fetch(identity)  # Read before the AC applied the change.
+            controller._update(identity, {'actmp': '25'}, source='mqtt')
+            return reply
+        controller.api.status = in_flight
+        with patch.object(core.time, 'monotonic', clock.monotonic):
+            controller._command('ac/test?x=1', 'temperature', 25, {'actmp': '25'})
+        self.assertEqual(controller.state['devices'][0]['state']['temperature'], 25)
+        self.assertEqual(controller.state['devices'][0]['state']['mode'], 'cool', 'Fields the AC did not report stay updated from REST')
+
     def test_explicitly_offline_rest_status_cannot_confirm_device_change(self):
         clock = VirtualClock()
         api = FakeAPI(status={'onlineStatus': 'off', 'actmp': '25'})

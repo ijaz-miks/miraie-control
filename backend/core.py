@@ -454,12 +454,13 @@ class Controller:
         failure = None
         for identity in list(self.internal):
             try:
+                since = self.sequence.get(identity, 0)
                 try:
                     status = self.api.status(identity)
                 except AuthenticationError:
                     self.api.login(*self.api.credentials)
                     status = self.api.status(identity)
-                self._update(identity, status, source='rest')
+                self._update(identity, status, source='rest', since=since)
                 successes += 1
             except MirAIeError as error:
                 failure = error
@@ -474,13 +475,17 @@ class Controller:
             self._disconnect()
             self._connect_mqtt()
 
-    def _update(self, identity, payload, source, retained=False):
+    def _update(self, identity, payload, source, retained=False, since=None):
         raw = unwrap_status(payload)
         with self.lock:
             internal = self.internal.get(identity)
             device = next((d for d in self.state['devices'] if d['id'] == identity), None)
             if not internal or not device:
                 return
+            if since is not None:
+                # Settings reported while this HTTP request was in flight are newer than its reply.
+                newer = {FIELDS[field] for field, generation in self.field_sequence.get(identity, {}).items() if generation > since}
+                raw = {key: value for key, value in raw.items() if key not in newer}
             cached = source == 'mqtt' and retained
             if cached:
                 # Subscription replays contain last-known settings, even for offline ACs.
@@ -601,6 +606,7 @@ class Controller:
                 self.lock.wait(timeout=1)
                 if confirmed():
                     return
+                since = self.sequence.get(identity, 0)
             if not local_sent and time.monotonic() < deadline:
-                self._update(identity, self.api.status(identity), source='rest')
+                self._update(identity, self.api.status(identity), source='rest', since=since)
         raise MirAIeError('The AC did not confirm this setting. Refresh to check its current state.')
